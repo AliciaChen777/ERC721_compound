@@ -1,13 +1,11 @@
-# Sample Hardhat Project
+# 期末專案
+###### tags: `blockchain`
+## 實現支援ERC721的compound代幣
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
 
-Try running some of the following tasks:
-
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
-```
+## 思路架構
+- 從作業寫過的compound架構發展
+- 新增ERC721 as collateral
+- 所以要發一個C ERC721 token
+- 去chainlink 拿ERC721價格
+    - oracle 接chainlink
