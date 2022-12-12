@@ -3,6 +3,7 @@ pragma solidity ^0.8.10;
 
 import "./CToken.sol";
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 interface CompLike {
     function delegate(address delegatee) external;
@@ -13,17 +14,10 @@ interface CompLike {
  * @notice CTokens which wrap an EIP-20 underlying
  * @author Compound
  */
-contract CErc20 is CToken, CErc20Interface {
-    /**
-     * @notice Initialize the new money market
-     * @param underlying_ The address of the underlying asset
-     * @param comptroller_ The address of the Comptroller
-     * @param interestRateModel_ The address of the interest rate model
-     * @param initialExchangeRateMantissa_ The initial exchange rate, scaled by 1e18
-     * @param name_ ERC-20 name of this token
-     * @param symbol_ ERC-20 symbol of this token
-     * @param decimals_ ERC-20 decimal precision of this token
-     */
+contract CErc721 is CToken, CErc20Interface {
+    event Mint_721(address minter, uint256 tokenId);
+    event Transfer_721(address to, address from, uint256 tokenID);
+
     function initialize(
         address underlying_,
         ComptrollerInterface comptroller_,
@@ -49,6 +43,11 @@ contract CErc20 is CToken, CErc20Interface {
         EIP20Interface(underlying).totalSupply();
     }
 
+    function mint(uint256 mintAmount) external override returns (uint256) {
+        mintInternal(mintAmount);
+        return NO_ERROR;
+    }
+
     /*** User Interface ***/
 
     /**
@@ -57,9 +56,75 @@ contract CErc20 is CToken, CErc20Interface {
      * @param mintAmount The amount of the underlying asset to supply
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function mint(uint256 mintAmount) external override returns (uint256) {
-        mintInternal(mintAmount);
+    function mint_721(uint256 tokenId, uint256 mintAmount)
+        external
+        returns (uint256)
+    {
+        mintInternal_721(tokenId, mintAmount);
+
         return NO_ERROR;
+    }
+
+    /**
+     * @notice Sender supplies assets into the market and receives cTokens in exchange
+     * @dev Accrues interest whether or not the operation succeeds, unless reverted
+     * @param mintAmount The amount of the underlying asset to supply
+     */
+    function mintInternal_721(uint256 tokenId, uint256 mintAmount)
+        internal
+        nonReentrant
+    {
+        accrueInterest();
+        // mintFresh emits the actual Mint event if successful and logs on errors, so we don't need to
+        mintFresh_721(msg.sender, tokenId, mintAmount);
+    }
+
+    /**
+     * @notice User supplies assets into the market and receives cTokens in exchange
+     * @dev Assumes interest has already been accrued up to the current block
+     * @param minter The address of the account which is supplying the assets
+     * @param mintAmount The amount of the underlying asset to supply
+     */
+    //mintFresh
+    function mintFresh_721(
+        address minter,
+        uint256 tokenId,
+        uint256 mintAmount
+    ) internal {
+        uint256 allowed = comptroller.mintAllowed(
+            address(this),
+            minter,
+            mintAmount
+        );
+
+        if (allowed != 0) {
+            revert MintComptrollerRejection(allowed);
+        }
+
+        //因為每次都會執行accrueInterest，就會更新區塊高度，所以會一致
+        if (accrualBlockNumber != getBlockNumber()) {
+            revert MintFreshnessCheck();
+        }
+        //取得當下的changeRate，透過exchangeRateStoredInternal即時計算
+        Exp memory exchangeRate = Exp({mantissa: exchangeRateStoredInternal()});
+
+        //返回真的傳入合約的數量
+        uint256 actualMintAmount = doTransferIn_721(
+            minter,
+            tokenId,
+            mintAmount
+        );
+
+        //算利息
+        //計算CErc20的數量，因為exchangeRate是放大1e18，所以actualMintAmount需要同步乘上1e18
+        //uint256 mintTokens = div_(actualMintAmount, exchangeRate);
+
+        totalSupply = totalSupply + 1;
+        // 這裡的account tokens 指的是ctokens
+        accountTokens[minter] = accountTokens[minter] + 1;
+
+        emit Mint_721(minter, tokenId);
+        emit Transfer_721(address(this), minter, tokenId);
     }
 
     /**
@@ -238,6 +303,50 @@ contract CErc20 is CToken, CErc20Interface {
             address(this)
         );
         return balanceAfter - balanceBefore; // underflow already checked above, just subtract
+    }
+
+    function doTransferIn_721(
+        address from,
+        uint256 tokenId,
+        uint256 amount
+    ) internal virtual returns (uint256) {
+        // Read from storage once
+        address underlying_ = underlying;
+        //實例化
+        IERC721 token = IERC721(underlying_);
+        // uint256 balanceBefore = EIP20Interface(underlying_).balanceOf(
+        //     address(this)
+        // );
+        token.transferFrom(from, address(this), tokenId);
+        // 檢查合約收到nft
+
+        require(token.ownerOf(tokenId) == address(this));
+
+        //為什麼這邊不要直接 bool success = token.transferFrom(from, address(this), amount)就好
+        // bool success;
+        // assembly {
+        //     switch returndatasize()
+        //     case 0 {
+        //         // This is a non-standard ERC-20
+        //         success := not(0) // set success to true
+        //     }
+        //     case 32 {
+        //         // This is a compliant ERC-20
+        //         returndatacopy(0, 0, 32)
+        //         success := mload(0) // Set `success = returndata` of override external call
+        //     }
+        //     default {
+        //         // This is an excessively non-compliant ERC-20, revert.
+        //         revert(0, 0)
+        //     }
+        // }
+        // require(success, "TOKEN_TRANSFER_IN_FAILED");
+
+        // Calculate the amount that was *actually* transferred
+        // uint256 balanceAfter = EIP20Interface(underlying_).balanceOf(
+        //     address(this)
+        // );
+        //return balanceAfter - balanceBefore; // underflow already checked above, just subtract
     }
 
     /**
