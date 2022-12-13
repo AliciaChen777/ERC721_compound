@@ -33,14 +33,15 @@ module.exports = {
     hardhat: {
       forking: {
         url: process.env.ALCHEMY_API_URL,
-        
+
         //blockNumber: 15969441,
-          blockNumber: 16166575,
+        blockNumber: 16169016,
+
       },
 
       allowUnlimitedContractSize: true
     },
-    goerli:{
+    goerli: {
       url: process.env.ALCHEMY_GOERLI_URL,
       accounts: [process.env.GOERLI_PRIVATE_KEY]
     }

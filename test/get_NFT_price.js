@@ -21,7 +21,7 @@ describe("compound", async function () {
     it("TEST Mint", async function () {
         [owner, addr1] = await ethers.getSigners();
         console.log(1, 2, 3, 4);
-        console.log(owner.address);
+        console.log('owner add', owner.address);
         const latestBlock = (await hre.ethers.provider.getBlock("latest")).number
         console.log('block num: ', latestBlock)
     })
@@ -39,30 +39,8 @@ describe("compound", async function () {
         console.log(await nftChainLink.getLatestPrice());
 
     })
-    // it('approve transfer nft', async function(){
-    //     //approve(address to, uint256 tokenId)
-    //     //uni.connect(binance).transfer(owner.address, UNIAmount);
-    //     azuki = await ethers.getContractAt("ERC721", nft_addr)
-    //     //usdc = await ethers.getContractAt("ERC20", usdcAddress);
-
-    //     // Deploy the contract
-
-    //     console.log("azuki.address ",azuki.address)    
-    //     const nft_owner = await azuki.ownerOf();
-    //     console.log('nft_owner',nft_owner)
-    //})
-
-    //it("impersonate", async function () {
-
-    //     await ethers.getContractAt("ERC721", azuki_nft)
-    //     await impersonateAccount(azuki_holder);
-    //     azuki = await ethers.getSigner(azuki_holder);
 
 
-    //     console.log('hardhat owner:', owner.address)
-    //     console.log('nft_owner:', azuki.address)
-
-    // })
 
     it("deploy Cerc721", async function () {
         let cerc721 = await ethers.getContractFactory("CErc721Immutable");
@@ -98,10 +76,22 @@ describe("compound", async function () {
         await cTokenNFT.deployed();
         console.log('cTokenNFT addr', cTokenNFT.address)
 
-
+        let tokenId = 7938
         let azuki_instance = await ethers.getContractAt("ERC721", azuki_nft)
         await impersonateAccount(azuki_holder);
         azuki = await ethers.getSigner(azuki_holder);
+        console.log('azuki.address', azuki.address)
+        //轉azuki給owner，讓owner抵押
+        await azuki_instance.connect(azuki).transferFrom(azuki.address, owner.address, tokenId);
+        //已成功轉給owner
+        console.log("azuki_instance.ownerOf(tokenId)", await azuki_instance.ownerOf(tokenId))
+
+        //owner提交azuki_nft給compound 成為抵押品
+        //await cTokenNFT.connect(owner).mint_721(USDCAmount);
+
+
+
+
 
 
 
