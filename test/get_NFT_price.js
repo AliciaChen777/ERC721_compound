@@ -21,10 +21,11 @@ describe("compound", async function () {
     let tokenNFTPrice = BigInt(11 * 1e18);
     let tokenUNIPrice = BigInt(1 * 1e18);
     let collateralFactorNFT = BigInt(0.8 * 1e18);
+    let newCollateralFactorNFT = BigInt(0.4 * 1e18);
     //liquidate factor3
     let closeFactor = BigInt(0.5 * 1e18);
 
-    //await oracle.setUnderlyingPrice(cTokenA.address, tokenAPrice);
+
 
     let UNIAmount = BigInt(1000 * 1e18);
     let borrowUNIAmount = BigInt(0.5 * 1e18);
@@ -197,7 +198,7 @@ describe("compound", async function () {
         console.log('cTokenNFT.balanceOf(payer.address)', await cTokenNFT.balanceOf(payer.address))
         console.log('cTokenUNI:.balanceOf(payer.address)', await cTokenUNI.balanceOf(payer.address))
 
-        await cTokenUNI.connect(owner).borrow(borrowUNIAmount);
+        await cTokenUNI.connect(owner).borrow(8);
         //expect(await uni.balanceOf(owner.address)).to.eq(borrowUNIAmount);
 
 
@@ -205,10 +206,54 @@ describe("compound", async function () {
 
     })
     it('set oracle collateral factor to lower', async function () {
-        //go
+        await comptroller._setCollateralFactor(
+            cTokenNFT.address,
+            newCollateralFactorNFT
+        );
+
+        let markets = await comptroller.markets(cTokenNFT.address);
+        expect(markets.collateralFactorMantissa).to.eq(
+            newCollateralFactorNFT
+        );
+
     })
+    it("liquidity should = 0 && short fall should > 0", async () => {
+        let result = await comptroller.getAccountLiquidity(owner.address);
+        console.log('liquity result:', result)
+        expect(result[1]).to.eq(0);
+        expect(result[2]).to.gt(0);
+    });
+
     it(' payer liquidate  owner debt', async function () {
         //go
+        let borrowBalance = await cTokenUNI.callStatic.borrowBalanceCurrent(
+            owner.address
+        );
+        console.log('borrowBalance', borrowBalance)
+        let repayAmount =
+            (BigInt(borrowBalance) * closeFactor) / BigInt(1e18);
+        console.log('repayAmount', repayAmount)
+        // before payer cTokenNFT balance = 0
+        console.log('before repay')
+        console.log('payer cTpkenNFT balance ', await cTokenNFT.balanceOf(payer.address))
+        console.log('payer cTpkenUNI balance ', await cTokenUNI.balanceOf(payer.address))
+        expect(await cTokenNFT.balanceOf(payer.address)).to.eq(0);
+
+        //協助償還借貸資產，到借出的cToken合約，執行liquidateBorrow，第一個參數為被清算人，第二為協助清算資產數量，第三個為抵押資產的cToken地址
+        await cTokenUNI
+            .connect(payer)
+            .liquidateBorrow(owner.address, repayAmount, cTokenNFT.address);
+
+        // after payer cTokenNFT balance should > 0
+        console.log('after repay')
+        console.log('payer cTpkenNFT balance ', await cTokenNFT.balanceOf(payer.address))
+        console.log('payer cTpkenUNI balance ', await cTokenUNI.balanceOf(payer.address))
+        expect(await cTokenNFT.balanceOf(payer.address)).to.gt(0);
+
+        // owner current borrow balance should less than origin borrow balance
+        expect(
+            await cTokenUNI.callStatic.borrowBalanceCurrent(owner.address)
+        ).to.lt(borrowBalance);
     })
     it('set ', async function () {
         //go
