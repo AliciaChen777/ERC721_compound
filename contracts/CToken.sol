@@ -665,7 +665,9 @@ abstract contract CToken is
         accrueInterest();
 
         // borrowFresh emits borrow-specific logs on errors, so we don't need to
+        console.log("in borrowInternal function");
         borrowFresh(payable(msg.sender), borrowAmount);
+        console.log("finish borrow internal");
     }
 
     /**
@@ -682,9 +684,15 @@ abstract contract CToken is
             borrowAmount
         );
 
+        console.log("address(this),", address(this));
+        console.log("borrower", borrower);
+        console.log("borrowAmount", borrowAmount);
+        console.log("borrowFresh");
+        console.log("allowed: ", allowed);
         if (allowed != 0) {
             revert BorrowComptrollerRejection(allowed);
         }
+        console.log("borrowFresh allowed =", allowed);
 
         /* Verify market's block number equals current block number */
         if (accrualBlockNumber != getBlockNumber()) {
@@ -705,7 +713,7 @@ abstract contract CToken is
         uint256 accountBorrowsNew = accountBorrowsPrev + borrowAmount;
 
         uint256 totalBorrowsNew = totalBorrows + borrowAmount;
-
+        console.log("totalBorrowsNew", totalBorrowsNew);
         /////////////////////////
         // EFFECTS & INTERACTIONS
         // (No safe failures beyond this point)
@@ -724,6 +732,8 @@ abstract contract CToken is
          *  On success, the cToken borrowAmount less of cash.
          *  doTransferOut reverts if anything goes wrong, since we can't be sure if side effects occurred.
          */
+
+        console.log("prepare to doTransferOut");
         doTransferOut(borrower, borrowAmount);
 
         /* We emit a Borrow event */
@@ -1423,6 +1433,7 @@ abstract contract CToken is
      */
     modifier nonReentrant() {
         require(_notEntered, "re-entered");
+        console.log("in doTransferOut");
         _notEntered = false;
         _;
         _notEntered = true; // get a gas-refund post-Istanbul
