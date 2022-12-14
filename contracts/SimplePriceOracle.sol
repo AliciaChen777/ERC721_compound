@@ -24,8 +24,6 @@ contract SimplePriceOracle is PriceOracle {
         } else {
             asset = address(CErc20(address(cToken)).underlying());
         }
-        console.log("cToken.symbol():", cToken.symbol());
-        console.log("asset:", asset);
 
         return asset;
     }

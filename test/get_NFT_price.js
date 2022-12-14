@@ -8,6 +8,10 @@ const helpers = require("@nomicfoundation/hardhat-network-helpers");
 const {
     impersonateAccount,
 } = require("@nomicfoundation/hardhat-network-helpers");
+const {
+    parseUnits
+} = require('ethers/lib/utils');
+
 //import 'hardhat/console.sol'
 
 describe("compound", async function () {
@@ -27,7 +31,8 @@ describe("compound", async function () {
 
 
 
-    let UNIAmount = BigInt(1000 * 1e18);
+    let UNIAmount = parseUnits('1000', 18);
+
     let borrowUNIAmount = BigInt(0.5 * 1e18);
     const binanceAddress = "0xF977814e90dA44bFA03b6295A0616a897441aceC";
     const uniAddress = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984";
@@ -94,7 +99,7 @@ describe("compound", async function () {
             owner.address
         );
         await cTokenNFT.deployed();
-        console.log('cTokenNFT addr', cTokenNFT.address)
+        //console.log('cTokenNFT addr', cTokenNFT.address)
 
 
 
@@ -112,7 +117,7 @@ describe("compound", async function () {
         );
         await cTokenUNI.deployed();
 
-        console.log('cTokenUNI addr', cTokenUNI.address)
+        //console.log('cTokenUNI addr', cTokenUNI.address)
 
 
 
@@ -121,18 +126,18 @@ describe("compound", async function () {
         clonex_instance = await ethers.getContractAt("ERC721", clonex_nft)
         await impersonateAccount(clonex_holder);
         clonex_signer = await ethers.getSigner(clonex_holder);
-        console.log('clonex_signer.address', clonex_signer.address)
+        //console.log('clonex_signer.address', clonex_signer.address)
         //轉clonex給owner，讓owner抵押
         await clonex_instance.connect(clonex_signer).transferFrom(clonex_signer.address, owner.address, tokenId);
         //已成功轉給owner
-        console.log("clonex_instance.ownerOf(tokenId)", await clonex_instance.ownerOf(tokenId))
+        //console.log("clonex_instance.ownerOf(tokenId)", await clonex_instance.ownerOf(tokenId))
 
         //qpprove clonex instance 準備給ctoken
         // approve 給cerc721合約調用
         // cerc721 address: 0x2bb8b93f585b43b06f3d523bf30c203d3b6d4bd4
         //因為是用immutable布合約的，沒辦法直接cerc721.address
         await clonex_instance.approve('0x2bb8b93f585b43b06f3d523bf30c203d3b6d4bd4', tokenId);
-        console.log("finish approve");
+        //console.log("finish approve");
 
 
 
@@ -177,7 +182,7 @@ describe("compound", async function () {
         //ya
         await uni.connect(payer).approve(cTokenUNI.address, UNIAmount);
 
-        await cTokenUNI.connect(payer).mint(UNIAmount);
+        await cTokenUNI.connect(payer).mint(UNIAmount.div(2));
         expect(await cTokenUNI.balanceOf(payer.address)).to.eq(UNIAmount);
 
     })
