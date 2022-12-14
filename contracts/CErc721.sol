@@ -317,15 +317,10 @@ contract CErc721 is CToken, CErc20Interface {
         // uint256 balanceBefore = EIP20Interface(underlying_).balanceOf(
         //     address(this)
         // );
-        console.log("in CErc721 msg.sender", msg.sender);
-        console.log("from", from);
-        console.log("to address(this)", address(this));
-        console.log("token.ownerOf(tokenId)", token.ownerOf(tokenId));
 
         token.transferFrom(from, address(this), tokenId);
         // 檢查合約收到nft
-        console.log("got nft");
-        console.log("token.ownerOf(tokenId)", token.ownerOf(tokenId));
+
         require(token.ownerOf(tokenId) == address(this));
 
         //為什麼這邊不要直接 bool success = token.transferFrom(from, address(this), amount)就好

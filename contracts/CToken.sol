@@ -706,7 +706,7 @@ abstract contract CToken is
         uint256 accountBorrowsNew = accountBorrowsPrev + borrowAmount;
 
         uint256 totalBorrowsNew = totalBorrows + borrowAmount;
-        console.log("totalBorrowsNew", totalBorrowsNew);
+
         /////////////////////////
         // EFFECTS & INTERACTIONS
         // (No safe failures beyond this point)
@@ -726,7 +726,6 @@ abstract contract CToken is
          *  doTransferOut reverts if anything goes wrong, since we can't be sure if side effects occurred.
          */
 
-        console.log("prepare to doTransferOut");
         doTransferOut(borrower, borrowAmount);
 
         /* We emit a Borrow event */

@@ -94,7 +94,6 @@ contract CErc20 is CToken, CErc20Interface {
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
     function borrow(uint256 borrowAmount) external override returns (uint256) {
-        console.log("CErc20 borrow function");
         borrowInternal(borrowAmount);
         return NO_ERROR;
     }
