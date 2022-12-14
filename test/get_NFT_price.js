@@ -28,10 +28,11 @@ describe("compound", async function () {
     let newCollateralFactorNFT = BigInt(0.4 * 1e18);
     //liquidate factor3
     let closeFactor = BigInt(0.5 * 1e18);
+    let cloneXOracleAddress, uniOracleAddress, newOracle
 
 
 
-    let UNIAmount = parseUnits('2000', 18);
+    let UNIAmount = parseUnits('1000', 18);
 
     let borrowUNIAmount = BigInt(0.5 * 1e18);
     const binanceAddress = "0xF977814e90dA44bFA03b6295A0616a897441aceC";
@@ -48,38 +49,38 @@ describe("compound", async function () {
         const latestBlock = (await hre.ethers.provider.getBlock("latest")).number
     })
 
+    //測試chainlink官網的tutorial
     it('deploy chainlink', async function () {
         nftChainLink = await ethers.getContractFactory("NFTFloorPriceConsumerV3");
 
         nftChainLink = await nftChainLink.deploy();
-
+        expect(await nftChainLink.getLatestPrice()).to.gt(0)
 
     })
-    it('test nft price', async function () {
 
-        nftPrice = await nftChainLink.getLatestPrice();
-    })
 
 
 
     it("deploy Cerc721", async function () {
         cerc721 = await ethers.getContractFactory("CErc721Immutable");
-        //cerc721 = await cerc721.deploy()
+
         // create interest model
         InterestRateModel = await ethers.getContractFactory(
             "WhitePaperInterestRateModel"
         );
         interestRateModel = await InterestRateModel.deploy(0, 0);
 
-        // //create comptroller
+
         Comptroller = await ethers.getContractFactory("Comptroller");
         comptroller = await Comptroller.deploy();
 
-        // //create oracel
-        Oracle = await ethers.getContractFactory("SimplePriceOracle");
-        oracle = await Oracle.deploy();
+        //create chainlink oracel
 
+        cloneXOracleAddress = '0x021264d59DAbD26E7506Ee7278407891Bb8CDCCc'
+        uniOracleAddress = '0xD6aA3D25116d8dA79Ea0246c4826EB951872e02e'
 
+        newOracle = await ethers.getContractFactory("SimplePriceOracleChainlink");
+        newOracle = await newOracle.deploy();
 
 
 
@@ -123,23 +124,27 @@ describe("compound", async function () {
         await clonex_instance.connect(clonex_signer).transferFrom(clonex_signer.address, owner.address, tokenId);
         //已成功轉給owner
 
-        //qpprove clonex instance 準備給ctoken
-        // approve 給cerc721合約調用
+        //qpprove clonex instance 準備給給cerc721合約調用
         // cerc721 address: 0x2bb8b93f585b43b06f3d523bf30c203d3b6d4bd4
-        //因為是用immutable布合約的，沒辦法直接cerc721.address
+
         await clonex_instance.approve('0x2bb8b93f585b43b06f3d523bf30c203d3b6d4bd4', tokenId);
 
 
 
+        //使用改寫的chainlink oracle function
+        await newOracle.setOracleAddress(cTokenNFT.address, cloneXOracleAddress)
+        await newOracle.getUnderlyingPrice(cTokenNFT.address)
+
+        await newOracle.setOracleAddress(cTokenUNI.address, uniOracleAddress)
+        await newOracle.getUnderlyingPrice(cTokenUNI.address)
 
 
-        await oracle.setUnderlyingPrice(cTokenNFT.address, nftPrice);
-        await oracle.setUnderlyingPrice(cTokenUNI.address, tokenUNIPrice);
         //support market
         await comptroller._supportMarket(cTokenUNI.address);
         await comptroller._supportMarket(cTokenNFT.address);
         //set oracle
-        await comptroller._setPriceOracle(oracle.address);
+
+        await comptroller._setPriceOracle(newOracle.address);
         //set collateral
         await comptroller._setCollateralFactor(cTokenUNI.address, collateralFactorUNI);
         await comptroller._setCollateralFactor(cTokenNFT.address, collateralFactorNFT);
@@ -155,7 +160,7 @@ describe("compound", async function () {
         await cTokenNFT.connect(owner).mint_721(tokenId, 1);
 
     })
-    it(' get uni from binance and transfer to payer', async function () {
+    it('get uni from binance and transfer to payer', async function () {
 
 
         uni = await ethers.getContractAt("ERC20", uniAddress);
@@ -167,7 +172,7 @@ describe("compound", async function () {
 
     })
     it('payer supply UNI to compound and get CtokenUNI', async function () {
-        //ya
+
         await uni.connect(payer).approve(cTokenUNI.address, UNIAmount);
 
         await cTokenUNI.connect(payer).mint(UNIAmount);
@@ -181,15 +186,7 @@ describe("compound", async function () {
 
     });
     it('owner borrow UNI', async function () {
-        //ya
-
-
-        await cTokenUNI.connect(owner).borrow(8);
-        //expect(await uni.balanceOf(owner.address)).to.eq(borrowUNIAmount);
-
-
-
-
+        await cTokenUNI.connect(owner).borrow(1000);
     })
     it('set oracle collateral factor to lower', async function () {
         await comptroller._setCollateralFactor(
@@ -225,8 +222,8 @@ describe("compound", async function () {
             .connect(payer)
             .liquidateBorrow(owner.address, repayAmount, cTokenNFT.address);
 
-        // after payer cTokenNFT balance should > 0
-        //expect(await cTokenNFT.balanceOf(payer.address)).to.gt(0);
+
+
         // owner current borrow balance should less than origin borrow balance
         expect(
             await cTokenUNI.callStatic.borrowBalanceCurrent(owner.address)
