@@ -133,7 +133,7 @@ describe("compound", async function () {
 
 
 
-        await oracle.setUnderlyingPrice(cTokenNFT.address, tokenNFTPrice);
+        await oracle.setUnderlyingPrice(cTokenNFT.address, nftPrice);
         await oracle.setUnderlyingPrice(cTokenUNI.address, tokenUNIPrice);
         //support market
         await comptroller._supportMarket(cTokenUNI.address);
@@ -232,9 +232,7 @@ describe("compound", async function () {
             await cTokenUNI.callStatic.borrowBalanceCurrent(owner.address)
         ).to.lt(borrowBalance);
     })
-    it('set ', async function () {
-        //go
-    })
+
 
 
 
