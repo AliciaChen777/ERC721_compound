@@ -19,3 +19,8 @@
 - 為了支援發cTokenNFT, 寫新contract CErc721.sol, CErc721Immutable
 - 為了接chainlink, 寫新contract simplePriceOracleChainlink.sol
 
+## 測試方法
+1. 將env api key們加上
+2. 下測試指令
+```npx hardhat test test/get_NFT_price.js --network hardhat```
+
