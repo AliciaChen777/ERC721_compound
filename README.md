@@ -1,4 +1,35 @@
-# 期末專案
+# Objective
+###### tags: `blockchain`
+## Implement Compound cToken supporting ERC721 token
+## This implementation use ERC721 cloneX and ERC20 uni for testing
+
+
+
+## Implement pipeline
+- Revised Compound protocol
+- Add ERC721 token as collateral
+- Issue ctoken CERC721 token
+- Get ERC721 price and uni price from chain by using chainlink
+- use oracle to link chainlink
+
+
+
+## Implement method
+- contract owner supplies ERC721 cloneX asset as collateral to borrow uni
+- In order to support cTokenNFT, write new contract CErc721.sol, CErc721Immutable
+- In order to connect to chainlink, write new contract simplePriceOracleChainlink.sol
+
+## Testing method
+1. add env api key
+2. use this line of cmd to
+```npx hardhat test test/get_NFT_price.js --network hardhat```
+
+
+
+
+
+
+# 專案
 ###### tags: `blockchain`
 ## 實現支援ERC721的compound代幣
 
@@ -7,7 +38,7 @@
 - 本次實現用cloneX 跟uni 做測試
 
 
-## 思路架構
+## 思路pipeline
 - 從作業寫過的compound架構發展
 - 新增ERC721 as collateral
 - 發CERC721 token
