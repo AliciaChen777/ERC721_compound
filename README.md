@@ -1,7 +1,7 @@
 # Objective
 ###### tags: `blockchain`
 ## Implement Compound cToken supporting ERC721 token
-## This implementation use ERC721 cloneX and ERC20 uni for testing
+- This implementation use ERC721 cloneX and ERC20 uni for testing
 
 
 
